@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicción de Diabetes</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Detector de Diabetes</h1>
+        
+        <form action="/predict" method="post">
+            <label for="age">Edad:</label>
+            <input type="text" id="age" name="age" placeholder="The age of the individual (18-90 years)" required>
+
+            <label for="pregnancies">Embarazos:</label>
+            <input type="text" id="pregnancies" name="pregnancies" placeholder="Number of times the patient has been pregnant" required>
+
+            <label for="bmi">Índice de Masa Corporal (IMC):</label>
+            <input type="text" id="bmi" name="bmi" placeholder="A measure of body fat based on height and weight (kg/m²)" required>
+
+            <label for="glucose">Glucosa:</label>
+            <input type="text" id="glucose" name="glucose" placeholder="Blood glucose concentration (mg/dL), a key diabetes indicator" required>
+
+            <label for="blood_pressure">Presión Arterial:</label>
+            <input type="text" id="blood_pressure" name="blood_pressure" placeholder="Systolic blood pressure (mmHg), higher levels may indicate hypertension" required>
+
+            <label for="hba1c">HbA1c:</label>
+            <input type="text" id="hba1c" name="hba1c" placeholder="Hemoglobin A1c level (%), representing average blood sugar over months" required>
+
+            <label for="ldl">LDL:</label>
+            <input type="text" id="ldl" name="ldl" placeholder="Bad cholesterol level (mg/dL)" required>
+
+            <label for="hdl">HDL:</label>
+            <input type="text" id="hdl" name="hdl" placeholder="Good cholesterol level (mg/dL)" required>
+
+            <label for="triglycerides">Triglicéridos:</label>
+            <input type="text" id="triglycerides" name="triglycerides" placeholder="Fat levels in the blood (mg/dL), high values increase diabetes risk" required>
+
+            <label for="waist_circumference">Circunferencia de la Cintura:</label>
+            <input type="text" id="waist_circumference" name="waist_circumference" placeholder="Waist measurement (cm), an indicator of central obesity" required>
+
+            <label for="hip_circumference">Circunferencia de la Cadera:</label>
+            <input type="text" id="hip_circumference" name="hip_circumference" placeholder="Hip measurement (cm), used to calculate WHR" required>
+
+            <label for="whr">Relación Cintura/Cadera (WHR):</label>
+            <input type="text" id="whr" name="whr" placeholder="Waist circumference divided by hip circumference" required>
+
+            <label for="family_history">Historial Familiar:</label>
+            <input type="text" id="family_history" name="family_history" placeholder="Indicates if the individual has a family history of diabetes (1 = Yes, 0 = No)" required>
+
+            <label for="diet_type">Tipo de Dieta:</label>
+            <input type="text" id="diet_type" name="diet_type" placeholder="Dietary habits (0 = Unbalanced, 1 = Balanced, 2 = Vegan/Vegetarian)" required>
+
+            <label for="hypertension">Hipertensión:</label>
+            <input type="text" id="hypertension" name="hypertension" placeholder="Presence of high blood pressure (1 = Yes, 0 = No)" required>
+
+            <label for="medication_use">Uso de Medicamentos:</label>
+            <input type="text" id="medication_use" name="medication_use" placeholder="Indicates if the individual is taking medication (1 = Yes, 0 = No)" required>
+
+            <input type="submit" value="Predecir">
+        </form>
+
+        {% if result is not none %}
+            <div class="result {% if result == 1 %}diabetes{% else %}no-diabetes{% endif %}">
+                {% if result == 1 %}
+                    <p>¡Tiene diabetes!</p>
+                {% else %}
+                    <p>No tiene diabetes.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+        <canvas id="networkCanvas" width="800" height="500"></canvas>
+    </div>
+    
+
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const canvas = document.getElementById("networkCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const networkData = JSON.parse('{{ network_data | safe }}' || 'null');
+    if (!networkData) return;
+
+    canvas.width = window.innerWidth * 0.8;
+    canvas.height = window.innerHeight * 0.8;
+
+    const layerSpacing = canvas.width / (networkData.length + 1);
+    const neuronRadius = 20;
+
+    function getColor(activation) {
+    const intensity = Math.min(255, Math.max(0, Math.round(activation * 255)));
+    // Si la activación es mayor a 0.5, un amarillo más vivo
+    if (activation > 0.5) {
+        return `rgb(255, ${intensity}, 50)`;  // Amarillo más brillante
+    } else {
+        return `rgb(${intensity / 2}, ${intensity / 2}, ${intensity / 2})`;  // Colores más oscuros para baja activación
+    }
+}
+
+    let layerPositions = [];
+    let neuronCounter = 1;
+
+    networkData.forEach((layer, i) => {
+        let layerX = (i + 1) * layerSpacing;
+        let neuronsY = canvas.height / (layer.length + 1);
+        let neuronPositions = [];
+
+        layer.forEach((neuron, j) => {
+            let neuronY = (j + 1) * neuronsY;
+            neuronPositions.push({ x: layerX, y: neuronY, activation: neuron.activation, id: neuronCounter++ });
+        });
+        layerPositions.push(neuronPositions);
+    });
+
+    layerPositions.forEach((layer, i) => {
+        if (i === 0) return;
+        let prevLayer = layerPositions[i - 1];
+
+        layer.forEach((neuron) => {
+            prevLayer.forEach((prevNeuron) => {
+                const weight = Math.abs(neuron.activation - prevNeuron.activation) * 2 + 1;
+                ctx.strokeStyle = `rgba(80, 80, 255, 0.9)`;
+                ctx.lineWidth = weight;
+                ctx.beginPath();
+                ctx.moveTo(prevNeuron.x, prevNeuron.y);
+                ctx.lineTo(neuron.x, neuron.y);
+                ctx.stroke();
+            });
+        });
+    });
+
+    layerPositions.forEach(layer => {
+        layer.forEach(neuron => {
+            let gradient = ctx.createRadialGradient(neuron.x, neuron.y, 5, neuron.x, neuron.y, neuronRadius);
+            gradient.addColorStop(0, "white");
+            gradient.addColorStop(1, getColor(neuron.activation));
+
+            ctx.fillStyle = gradient;
+            ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(neuron.x, neuron.y, neuronRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.2)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = "black";
+            ctx.font = "14px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(neuron.id, neuron.x, neuron.y);
+        });
+    });
+});
+
+    </script>
+    
+</body>
+</html>

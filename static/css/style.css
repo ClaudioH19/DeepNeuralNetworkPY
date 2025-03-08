@@ -1,0 +1,95 @@
+/* Estilos generales */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f8f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+    text-align: center;
+}
+
+/* Título principal */
+h1 {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+/* Formulario */
+form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr; /* Establecer 4 columnas */
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Ajustes para los labels y inputs */
+label {
+    font-size: 16px;
+    color: #333;
+    text-align: left;
+    margin-bottom: 5px;
+}
+
+input[type="text"] {
+    padding: 10px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 400px;
+}
+
+input[type="submit"] {
+    grid-column: span 4; /* El botón de envío ocupará toda la fila */
+    padding: 12px;
+    font-size: 18px;
+    background-color: #3b9e3b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+input[type="submit"]:hover {
+    background-color: #2a7e2a;
+}
+
+/* Resultado de la predicción */
+.result {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 5px;
+    transition: all 0.3s;
+}
+
+/* Estilo para "Tiene diabetes" */
+.result.diabetes {
+    background-color: #ff4e50;
+    color: white;
+}
+
+/* Estilo para "No tiene diabetes" */
+.result.no-diabetes {
+    background-color: #4caf50;
+    color: white;
+}
+
+/* Estilo para los textos de ayuda */
+p {
+    font-size: 14px;
+    color: #000000;
+}
